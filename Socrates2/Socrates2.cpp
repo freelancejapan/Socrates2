@@ -30,23 +30,9 @@ struct passive_participator {
 	std::vector<active_participator*> receiveList;
 };
 
-std::vector<std::string> outlist;
-int looptimes = 1000000;
+
+
 int tempint = 0;
-
-std::string globalString = "";
-
-void thread_function()
-{
-	for (int i = 0; i < looptimes; i++)
-	{
-		std::stringstream ss;
-		ss << "thread function Executing for id = " << std::this_thread::get_id();
-		//outlist.push_back(ss.str());
-		//globalString = globalString + ss.str() + "\n";
-	}
-}
-
 void thread_plus(int p1)
 {
 	std::cout << "Parameter is " << p1 << std::endl;
@@ -152,27 +138,13 @@ int main()
 
 
 
-
+	//启动两个线程，一个负责+1，一个负责-1，直到共有变量到达临界值
+	//int,long,double都会达到临界值
 	//std::thread t1(thread_plus,3);
 	//std::thread t2(thread_minus,4.1);
-	//std::thread t3(thread_function);
-	//std::thread t4(thread_function);
-	//std::thread t5(thread_function);
-	//std::thread t6(thread_function);
-
-	//for (int i = 0; i < 10000; i++);
-	//std::cout << "Display From MainThread" << std::endl;
 	//t1.join();
 	//t2.join();
-	//t3.join();
-	//t4.join();
-	//t5.join();
-	//t6.join();
 
-	/*for (int i = 0; i < outlist.size(); i++)
-	{
-		std::cout << outlist[i] << std::endl;
-	}*/
 
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 
