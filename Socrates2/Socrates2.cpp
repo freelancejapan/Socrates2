@@ -182,7 +182,7 @@ void calcDistribution(int topass,
 	int repeatimes,
 	double wheat_min_val,
 	double wheat_max_val,
-	int total_wheat_count) {
+	int total_wheat_count, std::vector<std::string>* rescontainer) {
 	std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_real_distribution<double> dist(wheat_min_val, wheat_max_val);
@@ -223,22 +223,97 @@ void calcDistribution(int topass,
 
 	//write to file to check distribution
 
-	std::ofstream myfile;
-	myfile.open("C:/Users/Admin/Desktop/income.csv", std::ios::app);
-	//打印每个被动方接收到的邀约
-	for (int i = 0; i < income_list.size(); i++)
+	if (rescontainer)
 	{
-		myfile << topass << "," << total_wheat_count << "," << repeatimes << "," << income_list[i] << std::endl;
+
+		//打印每个被动方接收到的邀约
+		for (int i = 0; i < income_list.size(); i++)
+		{
+			std::stringstream ss;
+			ss << topass << "," << total_wheat_count << "," << repeatimes << "," << income_list[i];
+			rescontainer->push_back(ss.str());
+		}
 	}
-	myfile.close();
+	else
+	{
+		std::ofstream myfile;
+		myfile.open("C:/Users/Admin/Desktop/income.csv", std::ios::app);
+		//打印每个被动方接收到的邀约
+		for (int i = 0; i < income_list.size(); i++)
+		{
+			myfile << topass << "," << total_wheat_count << "," << repeatimes << "," << income_list[i] << std::endl;
+		}
+		myfile.close();
+	}
 }
+
+int total_wheat = 100;
+int repeat_times_each = 10000;
+double wheat_min_val = 10;
+double wheat_max_val = 30;
 
 void simulateActiveParticipatorOnly()
 {
-	int total_wheat = 100;
-	for (int i = 1; i < total_wheat; i++){
-		calcDistribution(i, 100000, 10, 30, total_wheat);
+	for (int i = 1; i < total_wheat; i++) {
+		calcDistribution(i, repeat_times_each, wheat_min_val, wheat_max_val, total_wheat, nullptr);
 	}
+}
+
+void simulateActiveParticipatorOnly_Multithread()
+{
+	int max_thread = std::thread::hardware_concurrency();
+	std::vector<std::thread*> vec;
+	std::vector<std::vector<std::string>*> rescontainer;
+
+	for (int i = 1; i < total_wheat; i++) {
+		if (vec.size() >= max_thread) {
+			//wait thread execution
+			for (int j = 0; j < vec.size(); j++)
+			{
+				vec[j]->join();
+			}
+			//free memory
+			for (int j = 0; j < vec.size(); j++)
+			{
+				delete vec[j];
+			}
+			vec.clear();
+		}
+
+		std::vector<std::string>* tmpcontainer = new std::vector<std::string>();
+		rescontainer.push_back(tmpcontainer);
+		std::thread* tmp = new std::thread(calcDistribution,
+			i,
+			repeat_times_each,
+			wheat_min_val,
+			wheat_max_val,
+			total_wheat,
+			tmpcontainer);
+		vec.push_back(tmp);
+	}
+
+	for (int i = 0; i < vec.size(); i++)
+	{
+		vec[i]->join();
+	}
+	//free memory
+	for (int i = 0; i < vec.size(); i++)
+	{
+		delete vec[i];
+	}
+	vec.clear();
+
+	//store to file
+	std::ofstream myfile;
+	myfile.open("C:/Users/Admin/Desktop/income.csv", std::ios::app);
+	//打印每个被动方接收到的邀约
+	for (int i = 0; i < rescontainer.size(); i++)
+	{
+		for (int j = 0; j < rescontainer[i]->size(); j++) {
+			myfile << rescontainer[i]->at(j) << std::endl;
+		}
+	}
+	myfile.close();
 }
 
 int main()
@@ -256,7 +331,14 @@ int main()
 	//}
 	//if (location > -1) return 0;
 
-	simulateActiveParticipatorOnly();
+	auto start = std::chrono::high_resolution_clock::now();
+
+	simulateActiveParticipatorOnly_Multithread();
+
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+	std::cout << "Execution Time is " << duration.count() << std::endl;
+
 	return 2;
 
 	for (int i = 0; i < 2000; i++) {
